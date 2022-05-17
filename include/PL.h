@@ -68,23 +68,23 @@ class PL
             for (int i = 0; i < n; i++) {
                 double c;
                 is >> c;
-                (*p._T->c)(i) = -c;
+                (p._T->c)(i) = -c;
             }
             
             // Leitura da matriz A e vetor b
             for (int i = 0; i < m; i++) {
                 for (int j = 0; j < n; j++)
-                    is >> (*p._T->A)(i, j);
-                is >> (*p._T->b)(i);
+                    is >> (p._T->A)(i, j);
+                is >> (p._T->b)(i);
             }
 
             // Registro de operacoes
             for (int i = 0; i < m; i++)
-                (*p._T->ro)(i, i) = 1;
+                (p._T->ro)(i, i) = 1;
 
             // Variaveis de folga
             for (int i = 0; i < m; i++)
-                (*p._T->A)(i, i+n) = 1;
+                (p._T->A)(i, i+n) = 1;
 
             // Checar os valores zero
             for (int i = 0; i < M; i++)
