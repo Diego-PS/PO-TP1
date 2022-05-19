@@ -3,7 +3,7 @@
 #ifndef MATRIZ_H
 #define MATRIZ_H
 
-const bool debug = true;
+const bool debug = false;
 const double zero = 1e-7;
 
 void corrige_zero (double &x)
@@ -32,9 +32,7 @@ class Linha
         {
             delete[] _L;
 
-            if (debug) {
-                std::cout << "Destruiu a linha\n";
-            }
+            if (debug) std::cout << "Destruiu a linha\n";
         }
 
         int tamanho () { return _N; }
@@ -110,9 +108,7 @@ class Matriz
                 delete _A[i];
             delete[] _A;
 
-            if (debug) {
-                std::cout << "Destruiu a matriz\n";
-            }
+            if (debug) std::cout << "Destruiu a matriz\n";
         }
 
         Linha<T>& operator() (int x)

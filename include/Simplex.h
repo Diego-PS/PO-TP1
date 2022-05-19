@@ -62,7 +62,13 @@ class Tableau : public Matriz<>
     {
         public:
             Tableau& t;
-            A_matriz(Tableau& _t) : t(_t) {}
+            int m;
+            int n;
+            A_matriz(Tableau& _t) : t(_t) 
+            {
+                m = _t._M-1;
+                n = _t._N - _t._M;
+            }
             void pivo (int x, int y) { t.pivo(x+1, y+t._M-1); }
             double& operator() (int x, int y) { return t(x+1, y+t._M-1); }
     };
@@ -70,28 +76,32 @@ class Tableau : public Matriz<>
     {
         public:
             Tableau& t;
-            b_coluna(Tableau& _t) : t(_t) {}
+            int n;
+            b_coluna(Tableau& _t) : t(_t) { n = _t._M-1; }
             double& operator() (int x) { return t(x+1, t._N-1); }
     };
     class c_linha
     {
         public:
             Tableau& t;
-            c_linha(Tableau& _t) : t(_t) {}
+            int n;
+            c_linha(Tableau& _t) : t(_t) { n = _t._N - _t._M; }
             double& operator() (int x) { return t(0, x+t._M-1); }
     };
     class d_linha
     {
         public:
             Tableau& t;
-            d_linha(Tableau& _t) : t(_t) {}
+            int n;
+            d_linha(Tableau& _t) : t(_t) { n = _t._M-1; }
             double& operator() (int x) { return t(0, x); }
     };
     class ro_matriz
     {
         public:
             Tableau& t;
-            ro_matriz(Tableau& _t) : t(_t) {}
+            int n;
+            ro_matriz(Tableau& _t) : t(_t) { n = _t._M-1; }
             double& operator() (int x, int y) { return t(x+1, y); }
     };
 
@@ -111,6 +121,8 @@ class Tableau : public Matriz<>
             delete &ro;
         }
 
+        double& valor_otimo () { return (*this)(0, _N-1); }
+
         Solucao simplex (int tam, int base[])
         {
             if (debug) {
@@ -123,35 +135,21 @@ class Tableau : public Matriz<>
 
             // Colocamos a PL em formato canonico
             for (int i = 0; i < tam; i++) {
-                if (debug) {
-                    std::cout << "Estou tentando pivotear " << i << " " << base[i] << std::endl;
-                }
-
+                if (debug) std::cout << "Estou tentando pivotear " << i << " " << base[i] << std::endl;
                 A.pivo(i, base[i]);
-                
-                if (debug) {
-                    std::cout << (*this) << std::endl;
-                    // std::cout << "VERO:\n" << (*_VERO) << std::endl;
-                }
-            }
-            
-            if (debug) {
-                std::cout << "Formato canonico estendido\n";
-                std::cout << *this << std::endl;
+                if (debug) std::cout << (*this) << std::endl;
             }
             
             // Escolhemos a primeira coluna cuja primeira entrada seja negativa
             int y = -1;
-            for (int i = 0; i < _N-_M; i++) {
+            for (int i = 0; i < c.n; i++) {
                 if (c(i) < 0) {
                     y = i;
                     break;
                 }
             }
 
-            if (debug) {
-                std::cout << "coluna: " << y << std::endl;
-            }
+            if (debug) std::cout << "coluna: " << y << std::endl;
 
             // Se nao encontramos, terminamos o simplex e sabemos a solucao otima
             if (y == -1) {
@@ -162,10 +160,8 @@ class Tableau : public Matriz<>
                 double solucao_otima[n];
                 for (int i = 0; i < n; i++)
                     solucao_otima[i] = 0;
-                for (int i = 0; i < tam; i++) {
+                for (int i = 0; i < tam; i++)
                     solucao_otima[base[i]] = b(i);
-                    std::cout << b(i) << std::endl;
-                }
                 S.setSolucao_otima(n, solucao_otima);
 
                 n = _M - 1;
@@ -175,10 +171,9 @@ class Tableau : public Matriz<>
                     certificado_otima[i] = d(i);
                 S.setCertificado_otima(n, certificado_otima);
 
-                S.setValor_otimo((*this)(0, _N-1));
+                S.setValor_otimo(this->valor_otimo());
 
                 S.setBase(tam, base);
-                std::cout << S << std::endl;
                 return S;
             }
 
@@ -186,7 +181,7 @@ class Tableau : public Matriz<>
             const double inf = 1e300;
             double menor = inf;
             int x = -1;
-            for (int i = 0; i < _M-1; i++) {
+            for (int i = 0; i < b.n; i++) {
                 double e = A(i, y);
                 if (e <= 0) continue;
                 if (b(i)/e < menor) {
@@ -195,9 +190,7 @@ class Tableau : public Matriz<>
                 }
             }
 
-            if (debug) {
-                std::cout << "linha: " << x << std::endl;
-            }
+            if (debug) std::cout << "linha: " << x << std::endl;
 
             // Se nenhum valor da coluna e positivo, a PL e ilimitada
             if (x == -1) {
@@ -212,7 +205,7 @@ class Tableau : public Matriz<>
                     int k = base[i];
                     for (int j = 0; j < _M-1; j++) {
                         if (A(j, k) != 0)
-                            certificado[k] = A(j, y);
+                            certificado[k] = -A(j, y);
                     }
                 }
                 S.setCertificado_ilimitada(n, certificado);
@@ -234,18 +227,14 @@ class Tableau : public Matriz<>
 
         Solucao simplex ()
         {
-            if (debug) {
-                std::cout << "Agora estou comecando o simplex sem base\n";
-                //std::cout << *this << std::endl;
-                //std::cout << "VERO\n" << *_VERO << std::endl;
-            }
+            if (debug) std::cout << "Agora estou comecando o simplex sem base\n";
 
             // Primeiro fazemos b >= 0
-            for (int i = 0; i < _M-1; i++)
+            for (int i = 0; i < b.n; i++)
                 if (b(i) < 0)
-                    (*this)(i) *= -1;
+                    (*this)(i+1) *= -1;
 
-            std::cout << (*this) << std::endl;
+            if (debug) std::cout << (*this) << std::endl;
             
             // Agora construimos a PL auxiliar
             int M = _M;
@@ -255,54 +244,58 @@ class Tableau : public Matriz<>
                 for (int j = 0; j < N; j++)
                     matriz[i*N + j] = 0;
 
-            std::cout << "fez a matriz\n";
-
             Tableau *auxiliar = new Tableau(M, N, matriz);
-
-            std::cout << (*auxiliar) << std::endl;
             
             // primeira linha da PL auxiliar
-            for (int i = _N-_M; i < _N-1; i++)
+            for (int i = c.n; i < _N-1; i++)
                 (auxiliar->c)(i) = 1;
 
-            std::cout << "primeira linha da auxiliar\n";
-            std::cout << (*auxiliar) << std::endl;
+            if (debug) {
+                std::cout << "primeira linha da auxiliar\n";
+                std::cout << (*auxiliar) << std::endl;
+            }
 
             // a matriz A
-            for (int i = 0; i < _M-1; i++)
-                for (int j = 0; j < _N-_M; j++)
+            for (int i = 0; i < A.m; i++)
+                for (int j = 0; j < A.n; j++)
                     (auxiliar->A)(i, j) = A(i, j);
 
-            std::cout << "a matriz A\n";
-            std::cout << (*auxiliar) << std::endl;
+            if (debug) {
+                std::cout << "a matriz A\n";
+                std::cout << (*auxiliar) << std::endl;
+            }
 
             // a matriz identidade
             for (int i = 0; i < _M-1; i++)
                 (auxiliar->A)(i, _N-_M+i) = 1;
 
-            std::cout << "a matriz identidade\n";
-            std::cout << (*auxiliar) << std::endl;
+            if (debug) {
+                std::cout << "a matriz identidade\n";
+                std::cout << (*auxiliar) << std::endl;
+            }
 
             // a matriz de registro de operacoes
-            for (int i = 0; i < M-1; i++)
-                (auxiliar->ro)(i, i) = 1;
+            for (int i = 0; i < ro.n; i++)
+                (auxiliar->ro)(i, i) = ro(i, i);
 
-            std::cout << "a matriz de registro de operacoes\n";
-            std::cout << (*auxiliar) << std::endl;
+            if (debug) {
+                std::cout << "a matriz de registro de operacoes\n";
+                std::cout << (*auxiliar) << std::endl;
+            }
             
             // o vetor b
-            for (int i = 0; i < M-1; i++)
+            for (int i = 0; i < b.n; i++)
                 (auxiliar->b)(i) = b(i);
             
-             std::cout << "o vetor b\n";
-             std::cout << (*auxiliar) << std::endl;
+            if (debug) {
+                std::cout << "o vetor b\n";
+                std::cout << (*auxiliar) << std::endl;
+            }
 
             // verificamos o zero
             for (int i = 0; i < M; i++)
                 for (int j = 0; j < N; j++)
                     corrige_zero((*auxiliar)(i, j));
-            
-            std::cout << "ja verificamos\n";
 
             // acabamos de criar a PL auxiliar
             if (debug) {
@@ -317,24 +310,21 @@ class Tableau : public Matriz<>
             Solucao solucao_aux = auxiliar->simplex(M-1, base);
 
             // atualizamos o tableau
-            
-            for (int i = 0; i < M-1; i++)   
-                d(i) = (auxiliar->d)(i);
 
-            for (int i = 0; i < M-1; i++)
-                for (int j = 0; j < M-1; j++)
+            for (int i = 0; i < ro.n; i++)
+                for (int j = 0; j < ro.n; j++)
                     ro(i, j) = (auxiliar->ro)(i, j);
 
-            for (int i = 0; i < M-1; i++)
-                for (int j = 0; j < _N-_M; j++)
+            for (int i = 0; i < A.m; i++)
+                for (int j = 0; j < A.n; j++)
                     A(i, j) = (auxiliar->A)(i, j);
 
-            for (int i = 0; i < M-1; i++)
+            for (int i = 0; i < b.n; i++)
                 b(i) = (auxiliar->b)(i);
 
-            if (debug) {
-                std::cout << "Solucao da PL auxiliar:\n" << solucao_aux << std::endl;
-            }
+            this->valor_otimo() = auxiliar->valor_otimo();
+
+            if (debug) std::cout << "Solucao da PL auxiliar:\n" << solucao_aux << std::endl;
 
             Solucao S;
 
@@ -348,11 +338,11 @@ class Tableau : public Matriz<>
             } else {
                 int n = 0;
                 for (int i = 0; i < solucao_aux.base_viavel->tamanho(); i++)
-                    if ((*solucao_aux.base_viavel)(i) < _N-1) n++;
+                    if ((*solucao_aux.base_viavel)(i) < A.n) n++;
                 int base_viavel[n];
                 int j = 0;
                 for (int i = 0; i < n; i++) {
-                    if ((*solucao_aux.base_viavel)(i) < _N-1)
+                    if ((*solucao_aux.base_viavel)(i) < A.n)
                         base_viavel[j++] = (*solucao_aux.base_viavel)(i);
                 }
                 S = simplex(n, base_viavel);
