@@ -25,15 +25,15 @@ CC = g++
 CPPFLAGS = -g -Wall -std=c++11 -O3
 
 MAIN = main
-TARGET = tp01
+TARGET = tp1.out
 SRC = $(wildcard $(SRC_FOLDER)*.cpp)
 OBJ = $(patsubst $(SRC_FOLDER)%.cpp, $(OBJ_FOLDER)%.o, $(SRC))
 
 $(OBJ_FOLDER)%.o: $(SRC_FOLDER)%.cpp
 	$(CC) $(CPPFLAGS) -c $< -o $@ -I$(INCLUDE_FOLDER)
 
-all: $(OBJ)
+build: $(OBJ)
 	$(CC) $(CPPFLAGS) -o $(BIN_FOLDER)$(TARGET) $(OBJ)
 
 clean:
-	@rm -rf $(OBJ_FOLDER)* $(BIN_FOLDER)tp01
+	@rm -rf $(OBJ_FOLDER)* $(BIN_FOLDER)tp1.out
